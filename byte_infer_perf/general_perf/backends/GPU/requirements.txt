@@ -1,0 +1,10 @@
+
+general_perf/backends/GPU/wheel/onnxruntime_gpu-1.12.0+mc0.dev-cp38-cp38-linux_x86_64.whl
+general_perf/backends/GPU/wheel/tools/maca_converter-1.0.0.2-py3-none-any.whl
+general_perf/backends/GPU/wheel/tools/maca_quantizer-0.5.5-py3-none-any.whl
+
+general_perf/backends/GPU/wheel/torch-2.0.0+mc20240508.958-cp38-cp38-linux_x86_64.whl
+general_perf/backends/GPU/wheel/torchvision-0.15.1+mc20240508.958-cp38-cp38-linux_x86_64.whl
+tensorflow==2.7.4
+onnxsim<=0.4.30
+boto3
