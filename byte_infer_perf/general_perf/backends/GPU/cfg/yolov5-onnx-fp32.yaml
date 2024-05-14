@@ -1,0 +1,4 @@
+import_model: general_perf/model_zoo/popular/open_yolov5/yolov5-onnx-fp32.onnx
+export_model: general_perf/model_zoo/popular/open_yolov5/yolov5-onnx-fp32_qdq.onnx
+export_batch: -1
+input_shape: [3,640,640]

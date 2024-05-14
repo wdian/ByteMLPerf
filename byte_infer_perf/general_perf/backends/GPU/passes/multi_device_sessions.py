@@ -141,8 +141,8 @@ class MultiDeviceInferenceSession():
                 times_range.append(end_time - start_time)
 
         times_range.sort()
-        tail_latency = round(times_range[int(len(times_range) * 0.99)]/ batch_size * 1000, 3)
-        avg_latency = round(sum(times_range) / len(times_range) / batch_size * 1000, 3)
+        tail_latency = round(times_range[int(len(times_range) * 0.99)]/ batch_size * 1000, 12)
+        avg_latency = round(sum(times_range) / len(times_range) / batch_size * 1000, 12)
         
         return avg_latency, tail_latency
         

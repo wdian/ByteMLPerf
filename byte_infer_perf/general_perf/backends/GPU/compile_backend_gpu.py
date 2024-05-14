@@ -30,7 +30,7 @@ class CompileBackendGPU(compile_backend.CompileBackend):
 
         self.packrunner = False 
         self.current_dir = os.path.split(os.path.abspath(__file__))[0]
-        self._resnet = False
+        self._resnet = True
 
     def version(self) -> str:
         return "1.0.0"
@@ -67,21 +67,25 @@ class CompileBackendGPU(compile_backend.CompileBackend):
                 log.info("===== Convert model to onnx format".format(optimized_model))
                 self.ConvertOnnxModel(configs, model_path, optimized_model, model_format=model_format, specify_params=convert_param)
             else:
-                log.info("{} file exists, skip ONNX conversion".format(optimized_model))
+                log.info("{} Pre_optimize file exists, skip ONNX conversion".format(optimized_model))
 
             configs["model_info"]["model_path"] = optimized_model    
             configs["model_info"]["framework"] = "Onnx"
-            configs["model_info"]["framework_version"] = "1.2.0"
+            configs["model_info"]["framework_version"] = "1.12.0"
             configs["model_info"]["model_format"] = "onnx"
         else:
             model_dir, _ = os.path.split(model_path)
             optimized_model = os.path.join(model_dir, model_name.strip("/") + ".onnx")
             extra_params = {}
-            extra_params["input_shape"] = "/".join([str(v).replace(" ","") for _,v in 
-                                                    configs["model_info"]["input_shape"].items()])
-            self.optimizeModel(model_path, optimized_model, specify_params=extra_params)
-            configs["model_info"]["model_path"] = optimized_model    
-            configs["model_info"]["framework_version"] = "1.2.0"
+            # if configs["model_info"]["model"] in {"yolov5-onnx-fp32"}:
+            extra_params["input_shape"] = "/".join([str(v).replace(" ","") for _,v in configs["model_info"]["input_shape"].items()])
+            if not os.path.exists(optimized_model) or self._resnet:
+                self.optimizeModel(model_path, optimized_model, specify_params=extra_params)
+            else:
+                log.info("{} Pre_optimize file exists, skip ONNX conversion".format(optimized_model)) 
+
+            configs["model_info"]["model_path"] = optimized_model
+            configs["model_info"]["framework_version"] = "1.12.0"
 
         self.workload = configs['workload']
         self.model_info = configs['model_info']
@@ -105,8 +109,12 @@ class CompileBackendGPU(compile_backend.CompileBackend):
             configs['model_info']["model_path"] = half_model
 
         elif self.precision.lower() == "int8":
+            random_data = False
+            if configs["model_info"]['dataset_name'] == 'fake_dataset':
+                random_data = True
+            
             cfg_path = os.path.join(self.current_dir, "cfg", configs["model_info"]["model"] + ".yaml")
-            int8_model = self.quantizeteModel(cfg_path)
+            int8_model = self.quantizeteModel(cfg_path, random_data=random_data)
             configs['model_info']["model_path"] = int8_model
 
 
@@ -149,9 +157,9 @@ class CompileBackendGPU(compile_backend.CompileBackend):
         return
     
     @staticmethod
-    def optimizeModel(model_path, half_model, specify_params=None, simplify_level=1):
+    def optimizeModel(model_path, opt_model, specify_params={}, simplify_level=1):
         cmd = "python -m maca_converter --model_type onnx --model_path {} --output {} --simplify {}"\
-              .format(model_path, half_model, simplify_level) 
+              .format(model_path, opt_model, simplify_level) 
 
         cmd_list = [s.strip() for s in cmd.split(" ")]
         if specify_params is not None:
@@ -166,23 +174,24 @@ class CompileBackendGPU(compile_backend.CompileBackend):
         log.info(f"=====Optimize Onnx Model")
         log.debug(f"=====Optimize Command line: {cmd}")
         subprocess.run(cmd, shell=True, check=True)
-        if not os.path.exists(half_model) or not half_model.endswith(".onnx"):
+        if not os.path.exists(opt_model) or not opt_model.endswith(".onnx"):
             raise RuntimeWarning(f"Optimize onnx model failed,\nCommand line:{cmd}")
 
 
-    @staticmethod
-    def quantizeteModel(yaml_file: str, mode: str = "auto", run_cmd=False):
+    def quantizeteModel(self, yaml_file: str, mode: str = "auto", random_data=False, run_cmd=False):
         with open(yaml_file, "r") as f:
             content = yaml.load(f, Loader=yaml.Loader)
             export_file = content["export_model"]
         
-        if not os.path.exists(export_file):
+        if not os.path.exists(export_file) or self._resnet:
             if run_cmd:
                 quantize_cmd = "python -m maca_quantizer -c {} -m {}".format(yaml_file, mode)
+                if random_data:
+                    quantize_cmd += " -r"
                 subprocess.run(quantize_cmd, shell=True, check=True)
             else:
                 mxq = importlib.import_module(name='.maca_quantize_runner', package='maca_quantizer')
-                obj = mxq.MacaQuantizeRunner(yaml_file, mode=mode)
+                obj = mxq.MacaQuantizeRunner(yaml_file, mode=mode, random=random_data)
                 obj.run()
         return export_file
 

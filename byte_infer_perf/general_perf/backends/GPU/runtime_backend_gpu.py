@@ -34,7 +34,7 @@ class RuntimeBackendGPU(runtime_backend.RuntimeBackend):
         self.compiled_dir = (os.path.split(os.path.abspath(__file__))[0] + "/compiled_models")
     
     @ property
-    def engine(self, engine):
+    def engine(self):
         return self._engine
 
 
@@ -76,6 +76,8 @@ class RuntimeBackendGPU(runtime_backend.RuntimeBackend):
         results = self._engine.run(None, feeds)
         if str(self.model_name).startswith("bert-tf"):
             results = np.split(results[0], 2, axis=-1)
+        elif str(self.model_name).startswith("widedeep-tf"):
+            results = dict(zip(self.configs['segments'][0]['output_tensor_map'].split(","), results))
 
         return results
     
