@@ -6,7 +6,7 @@ general_perf/backends/GPU/wheel/torch-2.0.0+mc20240508.958-cp38-cp38-linux_x86_6
 general_perf/backends/GPU/wheel/torchvision-0.15.1+mc20240508.958-cp38-cp38-linux_x86_64.whl
 # torch==2.0.0
 # torchvision==0.15.1
-
+bert-tensorflow==1.0.1
 tensorflow==2.7.4
 onnxsim<=0.4.30
 boto3

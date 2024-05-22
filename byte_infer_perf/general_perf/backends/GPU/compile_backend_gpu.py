@@ -104,8 +104,10 @@ class CompileBackendGPU(compile_backend.CompileBackend):
         if self.precision.lower() == "fp16":
             model_dir, base_name = os.path.split(configs["model_info"]["model_path"])
             half_model = os.path.join(model_dir, base_name.strip("/").strip(".onnx") + f"_half.{suffix}")
+ 
             if not os.path.exists(half_model) or self._resnet:
-                self.castHalfModel(configs["model_info"]["model_path"], half_model)
+                cmd_mode = True if configs["model_info"]["model"] in {"bert-tf-fp32"} else False
+                self.castHalfModel(configs["model_info"]["model_path"], half_model, run_cmd=cmd_mode)
             configs['model_info']["model_path"] = half_model
 
         elif self.precision.lower() == "int8":
